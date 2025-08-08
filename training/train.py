@@ -16,7 +16,6 @@ def main(args):
 
     # Configure MLflow client to connect to the in-cluster service
     # This address is discoverable via Kubernetes DNS.
-    mlflow.set_tracking_uri("http://localhost:5001")
     mlflow.set_experiment("iris-classifier-production")
 
     with mlflow.start_run() as run:
@@ -54,12 +53,17 @@ def main(args):
             print(f"Validation PASSED. Accuracy ({accuracy:.4f}) is at or above threshold ({ACCURACY_THRESHOLD}).")
             
             # Save the trained model to the path provided by the Argo workflow
-            joblib.dump(model, args.model_output_path)
-            print(f"Model artifact saved to: {args.model_output_path}")
+            if args.model_output_path:
+                joblib.dump(model, args.model_output_path)
+                print(f"Model artifact saved to: {args.model_output_path}")
 
             # Log the model to the MLflow registry. This is the action that
-            # will trigger the webhook for the CD pipeline.
-            mlflow.sklearn.log_model(model, "model")
+            # will trigger the webhook for the CD pipeline.         
+            mlflow.sklearn.log_model(
+                model,
+                "model",
+                registered_model_name="iris-classifier"
+            )
             print("Model successfully logged to MLflow registry.")
             
             # Exit with success code for Argo Workflows
@@ -72,8 +76,8 @@ def main(args):
             sys.exit(1)
 
 if __name__ == "__main__":
-    # This script expects a command-line argument to know where to save the model file.
+    # This script accepts a command-line argument to know where to save the model file.
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-output-path", type=str, required=True, help="Path to save the trained model artifact.")
+    parser.add_argument("--model-output-path", type=str, required=False, help="Path to save the trained model artifact.")
     args = parser.parse_args()
     main(args)

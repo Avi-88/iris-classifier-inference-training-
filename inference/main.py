@@ -5,19 +5,15 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from prometheus_fastapi_instrumentator import Instrumentator
 
-# --- Application Setup ---
+
 app = FastAPI(
     title="ML Inference API",
     description="An API to serve the Iris classification model.",
     version="1.0.0"
 )
 
-# Add Prometheus metrics instrumentation to the API
 Instrumentator().instrument(app).expose(app)
 
-
-# --- Model Loading ---
-# Load the model path from an environment variable for configurability.
 MODEL_PATH = os.getenv("MODEL_PATH", "/models/model_not_found.joblib")
 model = None
 
@@ -32,7 +28,7 @@ def load_model():
         print(f"--- ERROR: Model file not found at {MODEL_PATH} ---")
         # The model remains None, and endpoints will return an error.
 
-# --- API Data Models ---
+
 class IrisInput(BaseModel):
     sepal_length: float
     sepal_width: float
@@ -43,7 +39,7 @@ class PredictionOut(BaseModel):
     predicted_species: str
     prediction_index: int
 
-# --- API Endpoints ---
+
 @app.get("/")
 def read_root():
     """Root endpoint providing API status."""
@@ -59,7 +55,7 @@ def predict(payload: IrisInput):
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded. Service is unavailable.")
 
-    # Convert Pydantic model to a numpy array for the model
+
     input_data = np.array([[
         payload.sepal_length,
         payload.sepal_width,
@@ -67,7 +63,6 @@ def predict(payload: IrisInput):
         payload.petal_width
     ]])
     
-    # Make prediction
     try:
         prediction_index = model.predict(input_data)[0]
         species_map = {0: 'setosa', 1: 'versicolor', 2: 'virginica'}
