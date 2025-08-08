@@ -1,0 +1,5 @@
+
+inference/venv
+training/venv
+inference/__pycache__
+training/__pycache__
